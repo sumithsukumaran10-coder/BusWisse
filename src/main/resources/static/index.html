@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BusWise — Intelligent Bus Transport Management System</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Custom Design System -->
+  <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Sidebar Navigation -->
+  <nav id="sidebar">
+    <div class="brand-header">
+      <i class="bi bi-bus-front-fill fs-3 text-info"></i>
+      <div>
+        <h1 class="brand-title">BusWise</h1>
+        <div class="brand-subtitle">Transit Operations v1.0</div>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="nav-item">
+        <a class="nav-link active" data-tab="dashboard">
+          <i class="bi bi-speedometer2"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="buses">
+          <i class="bi bi-truck-front"></i>
+          <span>Buses Fleet</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="routes">
+          <i class="bi bi-signpost-split"></i>
+          <span>Route Corridors</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="trips">
+          <i class="bi bi-calendar2-range"></i>
+          <span>Trip Dispatch</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="passengers">
+          <i class="bi bi-people"></i>
+          <span>Passenger Demand</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="fuel">
+          <i class="bi bi-fuel-pump"></i>
+          <span>Fuel & Efficiency</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="profitability">
+          <i class="bi bi-cash-coin"></i>
+          <span>Expenses & Profit</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="sustainability">
+          <i class="bi bi-leaf"></i>
+          <span>Sustainability (CO₂)</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="alerts">
+          <i class="bi bi-bell"></i>
+          <span>Operational Alerts</span>
+          <span id="global-alert-badge" class="badge-alert-count" style="display: none;">0</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-tab="reports">
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+          <span>Reports & Exports</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Main Content Wrap -->
+  <div id="main-content">
+    
+    <!-- Top Navbar -->
+    <header class="top-navbar">
+      <div class="d-flex align-items-center gap-3">
+        <button id="sidebar-toggle" class="btn btn-sm btn-light d-lg-none">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        <div>
+          <h2 id="page-title" class="page-heading">Fleet Operations Dashboard</h2>
+          <p id="page-subtitle" class="page-subheading">Real-time fleet status, revenue, fuel & demand metrics</p>
+        </div>
+      </div>
+
+      <div class="top-navbar-actions">
+        <button class="btn btn-sm btn-outline-primary" onclick="openScheduleTripModal()">
+          <i class="bi bi-plus-circle me-1"></i> Quick Schedule
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadCurrentTab()" title="Refresh Current View">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Body Area -->
+    <main class="content-body">
+
+      <!-- ===================================================================== -->
+      <!-- TAB 1: DASHBOARD -->
+      <!-- ===================================================================== -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <!-- KPI Row 1: Fleet & Volume -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-primary-subtle text-primary">
+                <i class="bi bi-bus-front"></i>
+              </div>
+              <div class="kpi-label">Total Fleet Buses</div>
+              <div id="kpi-total-buses" class="kpi-value">0</div>
+              <div class="kpi-subtext">
+                <span class="text-success"><span id="kpi-available-buses">0</span> Available</span> •
+                <span class="text-primary"><span id="kpi-ontrip-buses">0</span> On Trip</span> •
+                <span class="text-danger"><span id="kpi-maint-buses">0</span> Maint</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-info-subtle text-info">
+                <i class="bi bi-people"></i>
+              </div>
+              <div class="kpi-label">Total Passengers Carried</div>
+              <div id="kpi-total-passengers" class="kpi-value">0</div>
+              <div class="kpi-subtext">Across completed express runs</div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-success-subtle text-success">
+                <i class="bi bi-pie-chart"></i>
+              </div>
+              <div class="kpi-label">Average Occupancy Rate</div>
+              <div id="kpi-avg-occupancy" class="kpi-value">0%</div>
+              <div class="kpi-subtext">Benchmark capacity utilization</div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-warning-subtle text-warning">
+                <i class="bi bi-fuel-pump"></i>
+              </div>
+              <div class="kpi-label">Avg Fuel Efficiency</div>
+              <div id="kpi-avg-efficiency" class="kpi-value">0 km/L</div>
+              <div class="kpi-subtext">Baseline target: 3.8 km/L</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Row 2: Financial Performance -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-primary-subtle text-primary">
+                <i class="bi bi-cash-stack"></i>
+              </div>
+              <div class="kpi-label">Total Revenue</div>
+              <div id="kpi-total-revenue" class="kpi-value">₹0</div>
+              <div class="kpi-subtext">Gross ticket collections</div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-secondary-subtle text-secondary">
+                <i class="bi bi-receipt"></i>
+              </div>
+              <div class="kpi-label">Operating Expenses</div>
+              <div id="kpi-operating-cost" class="kpi-value">₹0</div>
+              <div class="kpi-subtext">Fuel + Tolls + Maintenance</div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-success-subtle text-success">
+                <i class="bi bi-graph-up-arrow"></i>
+              </div>
+              <div class="kpi-label">Estimated Operating Profit</div>
+              <div id="kpi-net-profit" class="kpi-value">₹0</div>
+              <div class="kpi-subtext">Net operating margin: <span id="kpi-profit-margin">0%</span></div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrapper bg-danger-subtle text-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+              </div>
+              <div class="kpi-label">Active Operational Alerts</div>
+              <div id="kpi-active-alerts" class="kpi-value">0</div>
+              <div class="kpi-subtext">Requires operator review</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-8">
+            <div class="chart-card">
+              <div class="card-title">
+                <span>Revenue vs Operating Expenses (INR)</span>
+                <span class="badge bg-light text-muted border">Financial Rollup</span>
+              </div>
+              <div style="height: 300px;">
+                <canvas id="chart-revenue-expenses"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="chart-card">
+              <div class="card-title">
+                <span>Bus Fleet Status</span>
+                <span class="badge bg-light text-muted border">Availability</span>
+              </div>
+              <div style="height: 300px;">
+                <canvas id="chart-bus-status"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Passenger Demand Chart & Alerts Widget Row -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-6">
+            <div class="chart-card">
+              <div class="card-title">
+                <span>Passenger Volume by Route</span>
+                <span class="badge bg-light text-muted border">Completed Trips</span>
+              </div>
+              <div style="height: 280px;">
+                <canvas id="chart-passenger-demand"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="table-card h-100">
+              <div class="table-card-header">
+                <h5 class="mb-0 fw-bold">Recent Operational Alerts</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="switchTab('alerts')">View All</button>
+              </div>
+              <div id="dashboard-alerts-container" class="p-3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Trips Table -->
+        <div class="table-card">
+          <div class="table-card-header">
+            <div>
+              <h5 class="mb-0 fw-bold">Recent Scheduled & Executed Trips</h5>
+              <small class="text-muted">Live dispatch view</small>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="openScheduleTripModal()">Schedule Trip</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Trip ID</th>
+                  <th>Bus Reg</th>
+                  <th>Route</th>
+                  <th>Departure</th>
+                  <th>Status</th>
+                  <th>Occupancy</th>
+                  <th>Ticket Revenue</th>
+                </tr>
+              </thead>
+              <tbody id="recent-trips-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 2: BUSES FLEET -->
+      <!-- ===================================================================== -->
+      <section id="tab-buses" class="tab-pane">
+        <div class="table-card">
+          <div class="table-card-header">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <div class="input-group input-group-sm" style="width: 260px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="text" id="bus-search" class="form-control" placeholder="Search registration or model...">
+              </div>
+              <select id="bus-status-filter" class="form-select form-select-sm" style="width: 160px;">
+                <option value="">All Statuses</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="ON_TRIP">On Trip</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="openAddBusModal()">
+              <i class="bi bi-plus-lg me-1"></i> Register Bus
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Reg Number</th>
+                  <th>Model / Spec</th>
+                  <th>Capacity</th>
+                  <th>Fuel Type</th>
+                  <th>Odometer</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="buses-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="p-3 border-top d-flex justify-content-between align-items-center">
+            <div id="buses-pagination"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 3: ROUTE CORRIDORS -->
+      <!-- ===================================================================== -->
+      <section id="tab-routes" class="tab-pane">
+        <div class="table-card">
+          <div class="table-card-header">
+            <div class="input-group input-group-sm" style="width: 280px;">
+              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+              <input type="text" id="route-search" class="form-control" placeholder="Search route code, terminal, or city...">
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="openAddRouteModal()">
+              <i class="bi bi-plus-lg me-1"></i> Add Route
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Route Name</th>
+                  <th>Origin Terminal</th>
+                  <th>Destination Terminal</th>
+                  <th>Distance</th>
+                  <th>Estimated Duration</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="routes-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="p-3 border-top d-flex justify-content-between align-items-center">
+            <div id="routes-pagination"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 4: TRIP DISPATCH -->
+      <!-- ===================================================================== -->
+      <section id="tab-trips" class="tab-pane">
+        <div class="table-card">
+          <div class="table-card-header">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <select id="trip-status-filter" class="form-select form-select-sm" style="width: 150px;">
+                <option value="">All Statuses</option>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+              <button class="btn btn-sm btn-outline-secondary" onclick="loadTrips()">Apply Filter</button>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="openScheduleTripModal()">
+              <i class="bi bi-plus-lg me-1"></i> Schedule New Trip
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Bus Reg</th>
+                  <th>Route</th>
+                  <th>Schedule</th>
+                  <th>Status</th>
+                  <th>Passenger Load</th>
+                  <th>Ticket Revenue</th>
+                  <th>Est. Margin</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trips-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="p-3 border-top d-flex justify-content-between align-items-center">
+            <div id="trips-pagination"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 5: PASSENGER DEMAND -->
+      <!-- ===================================================================== -->
+      <section id="tab-passengers" class="tab-pane">
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Total Passengers</div>
+              <div id="pax-total" class="kpi-value">0</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Average Occupancy</div>
+              <div id="pax-avg-occ" class="kpi-value">0%</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">High Demand Trips (>90%)</div>
+              <div id="pax-high-count" class="kpi-value text-danger">0</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Underutilized Trips (<40%)</div>
+              <div id="pax-low-count" class="kpi-value text-warning">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4 border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="bi bi-lightbulb text-warning me-2"></i>Data-Driven Capacity Recommendations</h5>
+            <div id="pax-recommendations-container"></div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <h5 class="mb-0 fw-bold">Corridor Occupancy Breakdown</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Route Code</th>
+                  <th>Corridor Name</th>
+                  <th>Total Passengers</th>
+                  <th>Average Occupancy</th>
+                  <th>Demand Classification</th>
+                </tr>
+              </thead>
+              <tbody id="pax-routes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 6: FUEL MANAGEMENT -->
+      <!-- ===================================================================== -->
+      <section id="tab-fuel" class="tab-pane">
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Total Fuel Consumed</div>
+              <div id="fuel-total-liters" class="kpi-value">0 L</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Total Fuel Expenditure</div>
+              <div id="fuel-total-cost" class="kpi-value">₹0</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Fleet Avg Efficiency</div>
+              <div id="fuel-avg-efficiency" class="kpi-value">0 km/L</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Inefficient Vehicles (&lt;3.8 km/L)</div>
+              <div id="fuel-inefficient-count" class="kpi-value text-danger">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Vehicle Fuel Efficiency Comparison</h5>
+          <button class="btn btn-sm btn-primary" onclick="openRecordFuelModal()">
+            <i class="bi bi-fuel-pump me-1"></i> Log Fuel Refueling
+          </button>
+        </div>
+
+        <div class="table-card mb-4">
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Registration</th>
+                  <th>Bus Model</th>
+                  <th>Fuel Type</th>
+                  <th>Total Distance</th>
+                  <th>Total Fuel Consumed</th>
+                  <th>Total Fuel Cost</th>
+                  <th>Efficiency (km/L)</th>
+                </tr>
+              </thead>
+              <tbody id="fuel-comparison-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <h5 class="mb-0 fw-bold">Recent Refueling Logs</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Bus Reg</th>
+                  <th>Distance Travelled</th>
+                  <th>Fuel Consumed</th>
+                  <th>Price/L</th>
+                  <th>Total Cost</th>
+                  <th>Efficiency</th>
+                </tr>
+              </thead>
+              <tbody id="fuel-logs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 7: EXPENSES & PROFITABILITY -->
+      <!-- ===================================================================== -->
+      <section id="tab-profitability" class="tab-pane">
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="kpi-card">
+              <div class="kpi-label">Total Revenue</div>
+              <div id="prof-revenue" class="kpi-value text-primary">₹0</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="kpi-card">
+              <div class="kpi-label">Total Operating Cost</div>
+              <div id="prof-total-cost" class="kpi-value text-secondary">₹0</div>
+              <small class="text-muted">Fuel: <span id="prof-fuel-cost">₹0</span> • Other: <span id="prof-other-cost">₹0</span></small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="kpi-card">
+              <div class="kpi-label">Net Operating Profit</div>
+              <div id="prof-net-profit" class="kpi-value text-success">₹0</div>
+              <small class="text-muted">Profit Margin: <span id="prof-margin">0%</span></small>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Corridor-Level Profitability</h5>
+          <button class="btn btn-sm btn-outline-primary" onclick="openRecordExpenseModal()">
+            <i class="bi bi-plus-circle me-1"></i> Log Operating Expense
+          </button>
+        </div>
+
+        <div class="table-card mb-4">
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Route Code</th>
+                  <th>Corridor Name</th>
+                  <th>Completed Trips</th>
+                  <th>Revenue</th>
+                  <th>Operating Cost</th>
+                  <th>Net Profit</th>
+                  <th>Margin %</th>
+                </tr>
+              </thead>
+              <tbody id="prof-routes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <h5 class="mb-0 fw-bold">Top Profitable Trips</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Trip ID</th>
+                  <th>Corridor</th>
+                  <th>Revenue</th>
+                  <th>Operating Cost</th>
+                  <th>Profit</th>
+                </tr>
+              </thead>
+              <tbody id="prof-top-trips-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 8: SUSTAINABILITY & EMISSIONS -->
+      <!-- ===================================================================== -->
+      <section id="tab-sustainability" class="tab-pane">
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Estimated CO₂ Emissions</div>
+              <div id="sust-total-kg" class="kpi-value text-danger">0 kg</div>
+              <small class="text-muted">(<span id="sust-total-tonnes">0</span> tonnes CO₂e)</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Avoided CO₂ via Electric Fleet</div>
+              <div id="sust-ev-saved" class="kpi-value text-success">0 kg</div>
+              <small class="text-muted">Zero tailpipe emissions</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Emissions Intensity</div>
+              <div id="sust-pax-km" class="kpi-value text-info">0 g/pax-km</div>
+              <small class="text-muted">Per passenger-kilometer</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="kpi-card">
+              <div class="kpi-label">Benchmark Diesel Factor</div>
+              <div class="kpi-value">2.68</div>
+              <small class="text-muted">kg CO₂ / liter diesel</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4 border-0 shadow-sm bg-light">
+          <div class="card-body">
+            <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1 text-primary"></i>Methodology & Transparency Disclosure</h6>
+            <p id="sust-methodology-note" class="text-muted mb-0 small"></p>
+          </div>
+        </div>
+
+        <div class="card mb-4 border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="bi bi-tree text-success me-2"></i>Decarbonization Pathways</h5>
+            <div id="sust-recommendations-container"></div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <h5 class="mb-0 fw-bold">Vehicle-Level Carbon Footprint</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Registration</th>
+                  <th>Bus Model</th>
+                  <th>Powertrain</th>
+                  <th>Fuel Consumed</th>
+                  <th>Estimated CO₂ Output</th>
+                </tr>
+              </thead>
+              <tbody id="sust-buses-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 9: OPERATIONAL ALERTS -->
+      <!-- ===================================================================== -->
+      <section id="tab-alerts" class="tab-pane">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <p class="text-muted mb-0">Automated rules engine scanning maintenance thresholds, fuel consumption, and capacity anomalies.</p>
+          <button class="btn btn-sm btn-outline-primary" onclick="triggerAlertScan()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Run Rules Scan
+          </button>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="table table-custom">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Alert Title</th>
+                  <th>Operational Observation & Rule</th>
+                  <th>Generated At</th>
+                  <th>State</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 10: REPORTS & EXPORTS -->
+      <!-- ===================================================================== -->
+      <section id="tab-reports" class="tab-pane">
+        <div class="row g-4">
+          <div class="col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm border-0 text-center p-4">
+              <i class="bi bi-bus-front fs-1 text-primary mb-3"></i>
+              <h5 class="fw-bold">Fleet Inventory Report</h5>
+              <p class="text-muted small">Download registration numbers, models, seating capacity, odometer readings, and current status.</p>
+              <a href="/api/reports/buses.csv" class="btn btn-outline-primary mt-auto" download>
+                <i class="bi bi-download me-1"></i> Download Buses (CSV)
+              </a>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm border-0 text-center p-4">
+              <i class="bi bi-calendar2-check fs-1 text-success mb-3"></i>
+              <h5 class="fw-bold">Trip Dispatch Report</h5>
+              <p class="text-muted small">Comprehensive log of scheduled, in-progress, and completed trips, passengers, and ticket revenue.</p>
+              <a href="/api/reports/trips.csv" class="btn btn-outline-success mt-auto" download>
+                <i class="bi bi-download me-1"></i> Download Trips (CSV)
+              </a>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm border-0 text-center p-4">
+              <i class="bi bi-fuel-pump fs-1 text-warning mb-3"></i>
+              <h5 class="fw-bold">Fuel Efficiency Log</h5>
+              <p class="text-muted small">Verified refueling dates, distance travelled, fuel consumed, prices, and km/L efficiency calculations.</p>
+              <a href="/api/reports/fuel.csv" class="btn btn-outline-warning mt-auto" download>
+                <i class="bi bi-download me-1"></i> Download Fuel (CSV)
+              </a>
+            </div>
+          </div>
+
+          <div class="col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm border-0 text-center p-4">
+              <i class="bi bi-receipt fs-1 text-danger mb-3"></i>
+              <h5 class="fw-bold">Operating Expenses</h5>
+              <p class="text-muted small">Itemized ledger of maintenance, tolls, permits, driver allowances, and fleet expenses.</p>
+              <a href="/api/reports/expenses.csv" class="btn btn-outline-danger mt-auto" download>
+                <i class="bi bi-download me-1"></i> Download Expenses (CSV)
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-4 border-0 shadow-sm">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="fw-bold mb-1">Printable Executive Summary</h6>
+              <small class="text-muted">Prepare printable transport authority summary sheet directly from browser.</small>
+            </div>
+            <button class="btn btn-secondary" onclick="window.print()">
+              <i class="bi bi-printer me-1"></i> Print / Save as PDF
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS -->
+  <!-- ========================================================================= -->
+
+  <!-- Modal: Add / Edit Bus -->
+  <div class="modal fade" id="busModal" tabindex="-1" aria-labelledby="busModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="bus-modal-form">
+          <div class="modal-header">
+            <h5 class="modal-title" id="busModalLabel">Register Bus</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="bus-id">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Registration Number *</label>
+              <input type="text" id="bus-registration" class="form-control" placeholder="e.g. KA-01-F-9001" required>
+              <small class="text-muted">Unique vehicle number (case-insensitive)</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Bus Model / Specification *</label>
+              <input type="text" id="bus-model" class="form-control" placeholder="e.g. Volvo 9600 Multi-Axle Luxury" required>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Seating Capacity *</label>
+                <input type="number" id="bus-capacity" class="form-control" min="1" max="120" value="45" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Fuel Type *</label>
+                <select id="bus-fuel-type" class="form-select" required>
+                  <option value="DIESEL">Diesel</option>
+                  <option value="CNG">CNG</option>
+                  <option value="ELECTRIC">Electric</option>
+                  <option value="PETROL">Petrol</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Current Odometer (km) *</label>
+                <input type="number" step="0.1" id="bus-odometer" class="form-control" min="0" value="0.0" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Operational Status *</label>
+                <select id="bus-status" class="form-select" required>
+                  <option value="AVAILABLE">Available</option>
+                  <option value="ON_TRIP">On Trip</option>
+                  <option value="MAINTENANCE">Maintenance</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Notes</label>
+              <textarea id="bus-notes" class="form-control" rows="2" placeholder="Optional servicing notes or telematics details..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Bus</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Route -->
+  <div class="modal fade" id="routeModal" tabindex="-1" aria-labelledby="routeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="route-modal-form">
+          <div class="modal-header">
+            <h5 class="modal-title" id="routeModalLabel">Add Route Corridor</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="route-id">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Route Code / Number *</label>
+              <input type="text" id="route-number" class="form-control" placeholder="e.g. RT-KA-101" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Route Name *</label>
+              <input type="text" id="route-name" class="form-control" placeholder="e.g. Bangalore - Mysuru Expressway" required>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Source Terminal *</label>
+                <input type="text" id="route-source" class="form-control" placeholder="e.g. Majestic, Bengaluru" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Destination Terminal *</label>
+                <input type="text" id="route-destination" class="form-control" placeholder="e.g. Mysuru Suburb Stand" required>
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Distance (km) *</label>
+                <input type="number" step="0.1" id="route-distance" class="form-control" min="0.1" value="145.0" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Duration (minutes) *</label>
+                <input type="number" id="route-duration" class="form-control" min="1" value="150" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Description</label>
+              <textarea id="route-description" class="form-control" rows="2" placeholder="Corridor highways, stops, or terrain notes..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Route</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Schedule Trip -->
+  <div class="modal fade" id="scheduleTripModal" tabindex="-1" aria-labelledby="scheduleTripModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form id="trip-modal-form">
+          <div class="modal-header">
+            <h5 class="modal-title" id="scheduleTripModalLabel">Schedule & Dispatch Trip</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Assign Bus *</label>
+                <select id="trip-bus-select" class="form-select" required></select>
+                <small class="text-muted">Only non-conflicting available buses</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Assign Route Corridor *</label>
+                <select id="trip-route-select" class="form-select" required></select>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Departure Date & Time *</label>
+                <input type="datetime-local" id="trip-departure" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Expected Arrival Time *</label>
+                <input type="datetime-local" id="trip-expected-arrival" class="form-control" required>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Booked Passenger Count</label>
+                <input type="number" id="trip-passengers" class="form-control" min="0" value="0">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Ticket Revenue (INR)</label>
+                <input type="number" step="0.01" id="trip-revenue" class="form-control" min="0" value="0.00">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Trip Operating Expenses (INR)</label>
+                <input type="number" step="0.01" id="trip-expenses" class="form-control" min="0" value="0.00">
+              </div>
+            </div>
+
+            <div class="card p-3 bg-light border-0 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="trip-overload">
+                <label class="form-check-label fw-bold" for="trip-overload">
+                  Record Passenger Overload Exception
+                </label>
+              </div>
+              <div class="mt-2">
+                <input type="text" id="trip-overload-reason" class="form-control form-control-sm" placeholder="Mandatory operational reason if passenger count exceeds seating capacity...">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Trip Dispatch Notes</label>
+              <textarea id="trip-notes" class="form-control" rows="2" placeholder="Driver assignments, weather notices..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Schedule Trip</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Update Trip Status -->
+  <div class="modal fade" id="updateTripModal" tabindex="-1" aria-labelledby="updateTripModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="update-trip-form">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title" id="updateTripModalLabel">Update Trip Status & Details</h5>
+              <small id="update-trip-title" class="text-muted"></small>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="update-trip-id">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Trip Status Transition *</label>
+              <select id="update-trip-status" class="form-select" required>
+                <option value="SCHEDULED">SCHEDULED</option>
+                <option value="IN_PROGRESS">IN_PROGRESS (Bus set to ON_TRIP)</option>
+                <option value="COMPLETED">COMPLETED (Bus set to AVAILABLE)</option>
+                <option value="CANCELLED">CANCELLED (Bus set to AVAILABLE)</option>
+              </select>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Passenger Count</label>
+                <input type="number" id="update-trip-passengers" class="form-control" min="0">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Ticket Revenue (₹)</label>
+                <input type="number" step="0.01" id="update-trip-revenue" class="form-control" min="0">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Trip Expenses (Toll/Permits ₹)</label>
+              <input type="number" step="0.01" id="update-trip-expenses" class="form-control" min="0">
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="update-trip-overload">
+              <label class="form-check-label" for="update-trip-overload">Overload Exception</label>
+            </div>
+            <div class="mb-3">
+              <input type="text" id="update-trip-overload-reason" class="form-control form-control-sm" placeholder="Reason if seats exceeded">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Notes</label>
+              <textarea id="update-trip-notes" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Record Fuel Refill -->
+  <div class="modal fade" id="recordFuelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="fuel-modal-form">
+          <div class="modal-header">
+            <h5 class="modal-title">Log Vehicle Refueling</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Bus *</label>
+              <select id="fuel-bus-select" class="form-select" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Associated Completed Trip</label>
+              <select id="fuel-trip-select" class="form-select"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Date *</label>
+              <input type="date" id="fuel-date" class="form-control" required>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Distance Travelled (km) *</label>
+                <input type="number" step="0.1" id="fuel-distance" class="form-control" min="0" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Fuel Consumed (L) *</label>
+                <input type="number" step="0.1" id="fuel-liters" class="form-control" min="0.1" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Fuel Price per Liter (INR) *</label>
+              <input type="number" step="0.01" id="fuel-price" class="form-control" min="0" value="92.50" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Notes</label>
+              <input type="text" id="fuel-notes" class="form-control" placeholder="Depot pump reading, brand...">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Fuel Record</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Record Operating Expense -->
+  <div class="modal fade" id="recordExpenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="expense-modal-form">
+          <div class="modal-header">
+            <h5 class="modal-title">Record Operational Expense</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label">Associated Bus</label>
+                <select id="exp-bus-select" class="form-select"></select>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Associated Trip</label>
+                <select id="exp-trip-select" class="form-select"></select>
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Date *</label>
+                <input type="date" id="exp-date" class="form-control" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Category *</label>
+                <select id="exp-category" class="form-select" required>
+                  <option value="TOLL">FASTag / Tolls</option>
+                  <option value="MAINTENANCE">Maintenance & Spares</option>
+                  <option value="DRIVER_SALARY">Driver / Staff Wages</option>
+                  <option value="PERMIT">Permits & Taxes</option>
+                  <option value="MISC">Miscellaneous</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Amount (INR) *</label>
+              <input type="number" step="0.01" id="exp-amount" class="form-control" min="0" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Description *</label>
+              <input type="text" id="exp-desc" class="form-control" placeholder="Specific expense item details..." required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Expense</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
